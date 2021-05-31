@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chat Rural</title>
+    <script src="https://www.gstatic.com/firebasejs/8.2.6/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.6/firebase-auth.js"></script>
+
+    <style media="screen">
+      body {
+        background: #eceff1;
+        color: rgba(0, 0, 0, 0.87);
+        font-family: Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      #message {
+        background: white;
+        max-width: 360px;
+        margin: 100px auto 16px;
+        padding: 32px 24px;
+        border-radius: 3px;
+        text-align: center;
+      }
+      #message h2 {
+        color: #ffa100;
+        font-weight: bold;
+        font-size: 16px;
+        margin: 0 0 8px;
+      }
+      #message h1 {
+        font-size: 22px;
+        font-weight: 300;
+        color: rgba(0, 0, 0, 0.6);
+        margin: 0 0 16px;
+      }
+      #message p {
+        line-height: 140%;
+        margin: 16px 0 24px;
+        font-size: 14px;
+      }
+      #message a {
+        display: block;
+        text-align: center;
+        background: #039be5;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: white;
+        padding: 16px;
+        border-radius: 4px;
+      }
+      #message,
+      #message a {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+      }
+      #load {
+        color: rgba(0, 0, 0, 0.4);
+        text-align: center;
+        font-size: 13px;
+      }
+      .avatar {
+        border-radius: 50%;
+        width: 200px;
+      }
+      #mensajesul {
+        text-align: left;
+        list-style: none;
+        height: 200px;
+        overflow: auto;
+      }
+      @media (max-width: 600px) {
+        body,
+        #message {
+          margin-top: 0;
+          background: white;
+          box-shadow: none;
+        }
+        body {
+          border-top: 16px solid #ffa100;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="message">
+      <img
+        src="https://cdn4.iconfinder.com/data/icons/famous-character-vol-2-flat/48/Avatar_Famous_Characters-43-512.png"
+        alt=""
+        class="avatar"
+        id="pic"
+      />
+      <h3 id="name"></h3>
+      <h2>Bienvenido a Chat Rural</h2>
+      <h1>La nueva forma de comunicarse entre todos</h1>
+      <a target="_blank" href="" id="login">Loguearse con Google</a>
+      <a target="_blank" href="" id="logout" style="display: none"
+        >Desloguearse</a
+      >
+      <p id="email"></p>
+      <div id="mensajesdiv" style="display: none">
+        <ul id="mensajesul"></ul>
+        <input type="text" id="mensajesinput" placeholder="Chatea" />
+        <button id="mensajeenviar">Enviar</button>
+      </div>
+    </div>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyAiAc9SlYvmV5CDiMj-6nYql2ZSuv3u6pA",
+        authDomain: "chatrural-2021.firebaseapp.com",
+        databaseURL: "https://chatrural-2021-default-rtdb.firebaseio.com",
+        projectId: "chatrural-2021",
+        storageBucket: "chatrural-2021.appspot.com",
+        messagingSenderId: "577980721894",
+        appId: "1:577980721894:web:d8da90b1c7aecd6e972927",
+      };
+      firebase.initializeApp(firebaseConfig);
+
+      let usuario = {}; //objet para traer todos los elementos de user
+      let off = document.getElementById("logout");
+      let btt = document.getElementById("login");
+      let name = document.getElementById("name");
+      let pic = document.getElementById("pic");
+      let email = document.getElementById("email");
+      let botonenviar = document.getElementById("mensajeenviar");
+      let chat = document.getElementById("mensajesinput");
+      let listamensajes = document.getElementById("mensajesul");
+      let contenedormsj = document.getElementById("mensajesdiv");
+
+      //logear button
+      btt.addEventListener("click", (e) => {
+        e.preventDefault();
+        loguearconGoogle();
+      });
+      //deslogear button
+      off.addEventListener("click", (e) => {
+        e.preventDefault();
+        desloguearse();
+      });
+      //boton de enviar mensaje
+      botonenviar.addEventListener("click", (e) => {
+        e.preventDefault();
+        guardarMensaje();
+      });
+
+      //funciones para logear y deslogear
+      function loguearconGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase
+          .auth()
+          .signInWithPopup(provider)
+          .then((result) => {
+            console.log("llegaste hasta aca");
+            usuario = result;
+            console.log("este es el usuairo ", usuario);
+            lookearUsuario();
+          })
+          .catch((error) => console.log(error.message));
+      }
+      function desloguearse() {
+        firebase
+          .auth()
+          .signOut()
+          .then(function () {
+            console.log("el user se deslogueo");
+            lookearDefault();
+          })
+          .catch(function (err) {
+            console.log(err, "dio error");
+          });
+      }
+      //dar look al modal de usuario logueado
+      function lookearUsuario() {
+        btt.style.display = "none";
+        off.style.display = "block";
+        contenedormsj.style.display = "block";
+        name.innerHTML = usuario.user.displayName;
+        email.innerHTML = usuario.user.email;
+        pic.src = usuario.user.photoURL;
+        mostrarMensajes();
+      }
+      //dar look al modal default
+      function lookearDefault() {
+        btt.style.display = "block";
+        off.style.display = "none";
+        contenedormsj.style.display = "none";
+        name.innerHTML = "";
+        email.innerHTML = "";
+        pic.src =
+          "https://cdn4.iconfinder.com/data/icons/famous-character-vol-2-flat/48/Avatar_Famous_Characters-43-512.png";
+      }
+
+      //verificar el estado inicial de la pagina
+      document.addEventListener("DOMContentLoaded", () => {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            usuario = { user: user };
+            lookearUsuario();
+          }
+        });
+      });
+
+      //funcionalidad del chat
+      function guardarMensaje() {
+        const record = {
+          avatar: usuario.user.photoURL,
+          nombre: usuario.user.displayName,
+          txt: chat.value,
+        };
+        const db = firebase.database();
+        const dbRef = db.ref("chat");
+        const newMensaje = dbRef.push();
+        newMensaje.set(record);
+        chat.value = "";
+      }
+      //mostrar en pantalla los mensajes
+      function mostrarMensajes() {
+        const db = firebase.database();
+        const dbRef = db.ref("chat");
+        dbRef.on("child_added", (snapshot) => {
+          var item = document.createElement("li");
+          item.innerHTML =
+            "<strong>" +
+            snapshot.val().nombre +
+            "</strong>: " +
+            snapshot.val().txt;
+          listamensajes.appendChild(item);
+          let items = document.querySelectorAll("li");
+          let last = items[items.length - 1];
+          last.scrollIntoView();
+        });
+      }
+    </script>
+  </body>
+</html>
